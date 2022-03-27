@@ -1,7 +1,6 @@
 """ Generate random data-generating environments
 """
 
-import torch
 import numpy as np
 
 def generate_activations(
