@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 class SingleLayer(nn.Module):
     """ Single Layer Model
@@ -19,6 +20,26 @@ class SingleLayer(nn.Module):
     def forward(self, x):
         x = self.act(self.fc1(x))
         x = self.fc2(x)
+        return x
+
+class MultiLayer(nn.Module):
+    """ Multi Layer Model
+    """
+    def __init__(self, d, hidden_size, act=F.relu):
+        super(MultiLayer, self).__init__()
+        self.n_hidden = len(hidden_size)
+        self.fcs = nn.ModuleList()
+        self.fcs.append(nn.Linear(d, hidden_size[0]))
+        for i in range(self.n_hidden - 1):
+            self.fcs.append(nn.Linear(hidden_size[i], hidden_size[i+1]))
+        self.fcs.append(nn.Linear(hidden_size[-1], 1))
+        self.act = act
+
+    def forward(self, x):
+        x = self.fcs[0](x)
+        for i in range(self.n_hidden):
+            x = self.act(x)
+            x = self.fcs[i+1](x)
         return x
 
 def get_data_loader(x, y, batch_size=100):
@@ -73,17 +94,22 @@ def train_early_stopping(
     validation_loader, 
     epochs = 1000,
     patience = 5,
+    verbose = False,
 ):
     """ 
     :param patience: Number of epochs with no improvement after which training will be stopped
     """
-    epoch_number = 0
+    from datetime import datetime
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    if verbose:
+        writer = SummaryWriter('runs/{}'.format(timestamp))
 
     best_vloss = np.inf
     early_stopping = 0
 
     for epoch in range(epochs):
-        # print('EPOCH {}:'.format(epoch_number + 1))
+        if verbose:
+            print('EPOCH {}:'.format(epoch + 1))
 
         # Make sure gradient tracking is on, and do a pass over the data
         model.train(True)
@@ -100,9 +126,15 @@ def train_early_stopping(
             running_vloss += vloss
 
         avg_vloss = running_vloss / (i + 1)
-        # print('LOSS train {} valid {}'.format(avg_loss, avg_vloss))
 
-        # Track best performance, and save the model's state
+        if verbose:
+            print('LOSS train {} valid {}'.format(avg_loss, avg_vloss))
+            writer.add_scalars(
+                'LOSS',
+                { 'Training' : avg_loss, 'Validation' : avg_vloss },
+                epoch + 1
+            )
+            writer.flush()
         if avg_vloss >= best_vloss:
             early_stopping += 1
         else:
@@ -111,25 +143,27 @@ def train_early_stopping(
         if early_stopping >= patience:
             break
 
-        epoch_number += 1
-    return (epoch_number, best_vloss)
+    return (epoch + 1, best_vloss, avg_loss)
 
 def train_one_model(
     hidden_dim, x, y, 
     val_ratio=0.2,
     lr = 0.001,
+    batch_size = 128,
+    model = None,
     **train_kwargs,
 ):
     """
     """
     (T, d) = x.shape
     val_size = int(T * val_ratio)
-    training_loader = get_data_loader(x[:-val_size], y[:-val_size])
-    validation_loader = get_data_loader(x[-val_size:], y[-val_size:])
-    model = SingleLayer(d, hidden_dim)
+    if model is None:
+        model = MultiLayer(d, hidden_dim)
+    training_loader = get_data_loader(x[:-val_size], y[:-val_size], batch_size)
+    validation_loader = get_data_loader(x[-val_size:], y[-val_size:], batch_size)
     loss_fn = torch.nn.MSELoss(reduction='mean')
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    (epoch_number, best_vloss) = train_early_stopping(
+    (epoch_number, best_vloss, avg_loss) = train_early_stopping(
         model,
         optimizer,
         loss_fn,
@@ -137,4 +171,4 @@ def train_one_model(
         validation_loader, 
         **train_kwargs,
     )
-    return (model, epoch_number, best_vloss)
+    return (model, epoch_number, best_vloss, avg_loss)
