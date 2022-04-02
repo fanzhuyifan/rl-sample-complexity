@@ -25,7 +25,7 @@ class SingleLayer(nn.Module):
 class MultiLayer(nn.Module):
     """ Multi Layer Model
     """
-    def __init__(self, d, hidden_size, act=F.relu):
+    def __init__(self, d, hidden_size, act=F.relu, dropout=0):
         super(MultiLayer, self).__init__()
         self.n_hidden = len(hidden_size)
         self.fcs = nn.ModuleList()
@@ -33,12 +33,13 @@ class MultiLayer(nn.Module):
         for i in range(self.n_hidden - 1):
             self.fcs.append(nn.Linear(hidden_size[i], hidden_size[i+1]))
         self.fcs.append(nn.Linear(hidden_size[-1], 1))
+        self.dropout = nn.Dropout(dropout)
         self.act = act
 
     def forward(self, x):
         x = self.fcs[0](x)
         for i in range(self.n_hidden):
-            x = self.act(x)
+            x = self.act(self.dropout(x))
             x = self.fcs[i+1](x)
         return x
 
@@ -149,6 +150,8 @@ def train_one_model(
     hidden_dim, x, y, 
     val_ratio=0.2,
     lr = 0.001,
+    weight_decay = 0.01,
+    dropout = 0,
     batch_size = 128,
     model = None,
     **train_kwargs,
@@ -158,11 +161,11 @@ def train_one_model(
     (T, d) = x.shape
     val_size = int(T * val_ratio)
     if model is None:
-        model = MultiLayer(d, hidden_dim)
+        model = MultiLayer(d, hidden_dim, dropout=dropout)
     training_loader = get_data_loader(x[:-val_size], y[:-val_size], batch_size)
     validation_loader = get_data_loader(x[-val_size:], y[-val_size:], batch_size)
     loss_fn = torch.nn.MSELoss(reduction='mean')
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     (epoch_number, best_vloss, avg_loss) = train_early_stopping(
         model,
         optimizer,
