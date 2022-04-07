@@ -70,7 +70,7 @@ def train_one_epoch(
         inputs, labels = data
 
         # Zero your gradients for every batch!
-        optimizer.zero_grad()
+        optimizer.zero_grad(set_to_none=True)
 
         # Make predictions for this batch
         outputs = model(inputs)
