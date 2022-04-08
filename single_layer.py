@@ -154,6 +154,7 @@ def train_one_model(
     dropout = 0,
     batch_size = 128,
     model = None,
+    act = nn.ReLU(),
     **train_kwargs,
 ):
     """
@@ -161,7 +162,7 @@ def train_one_model(
     (T, d) = x.shape
     val_size = int(T * val_ratio)
     if model is None:
-        model = MultiLayer(d, hidden_dim, dropout=dropout)
+        model = MultiLayer(d, hidden_dim, dropout=dropout, act=act)
     training_loader = get_data_loader(x[:-val_size], y[:-val_size], batch_size)
     validation_loader = get_data_loader(x[-val_size:], y[-val_size:], batch_size)
     loss_fn = torch.nn.MSELoss(reduction='mean')
