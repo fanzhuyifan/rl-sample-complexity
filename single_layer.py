@@ -25,7 +25,7 @@ class SingleLayer(nn.Module):
 class MultiLayer(nn.Module):
     """ Multi Layer Model
     """
-    def __init__(self, d, hidden_size, act=F.relu, dropout=0):
+    def __init__(self, d, hidden_size, act=F.relu, dropout=0, batchNorm=False):
         super(MultiLayer, self).__init__()
         self.n_hidden = len(hidden_size)
         self.fcs = nn.ModuleList()
@@ -35,11 +35,20 @@ class MultiLayer(nn.Module):
         self.fcs.append(nn.Linear(hidden_size[-1], 1))
         self.dropout = nn.Dropout(dropout)
         self.act = act
+        self.batchNorm = batchNorm
+        if self.batchNorm:
+            self.batch_norms = nn.ModuleList()
+            for hidden_size in hidden_size:
+                self.batch_norms.append(nn.BatchNorm1d(hidden_size))
+
 
     def forward(self, x):
         x = self.fcs[0](x)
         for i in range(self.n_hidden):
-            x = self.act(self.dropout(x))
+            x = self.dropout(x)
+            if self.batchNorm:
+                x = self.batch_norms[i](x)
+            x = self.act(x)
             x = self.fcs[i+1](x)
         return x
 
@@ -155,6 +164,7 @@ def train_one_model(
     batch_size = 128,
     model = None,
     act = nn.ReLU(),
+    batchNorm = False,
     **train_kwargs,
 ):
     """
@@ -162,7 +172,7 @@ def train_one_model(
     (T, d) = x.shape
     val_size = int(T * val_ratio)
     if model is None:
-        model = MultiLayer(d, hidden_dim, dropout=dropout, act=act)
+        model = MultiLayer(d, hidden_dim, dropout=dropout, act=act, batchNorm=batchNorm)
     training_loader = get_data_loader(x[:-val_size], y[:-val_size], batch_size)
     validation_loader = get_data_loader(x[-val_size:], y[-val_size:], batch_size)
     loss_fn = torch.nn.MSELoss(reduction='mean')
