@@ -50,7 +50,7 @@ def generate_single_layer_v2(
     """
     an = np.random.normal(0, 1, size=(num, M, d))
     bn = np.random.normal(0, 1, size=(num, M))
-    thetan = np.random.normal(0, 1, size=(num, M))
+    thetan = np.random.normal(0, 1 / np.sqrt(M), size=(num, M))
     return (thetan, an, bn)
 
 def generate_single_data(
