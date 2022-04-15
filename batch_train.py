@@ -37,7 +37,7 @@ def main():
     parser.add_argument(
         "--epochs", type=int, default=500, help="Maximum number of epochs")
     parser.add_argument(
-        "--file", type=str, default=None, help="Config File Storing d, M, T, noise, hidden-dim, count")
+        "--file", type=str, default=None, help="Config File Storing d, M, T, noise, hidden-dim, count, lr, weight-decay, dropout, patience, epochs, batch-size")
 
     args = parser.parse_args()
     if args.file is None:
@@ -57,19 +57,24 @@ def train_file(args):
             (model, epoch_number, best_vloss, train_loss) = train_one_model(
                 hidden_dim, X[0], Y[0], 
                 val_ratio=args.val_ratio, 
-                lr=args.lr, 
-                weight_decay=args.weight_decay,
-                dropout=args.dropout,
-                batch_size=args.batch_size,
-                patience=args.patience, 
-                epochs=args.epochs,
+                lr=row["lr"], 
+                weight_decay=row["weight-decay"],
+                dropout=row["dropout"],
+                batch_size=row["batch-size"],
+                patience=row["patience"], 
+                epochs=row["epochs"],
                 verbose=False,
             )
             model.eval()
             (X_test, Y_test) = generate.generate_single_data_v2(args.N_test, an, bn, thetan)
             predicted = model(torch.Tensor(X_test)).detach().numpy()
             kl_divergence = generate.kl_divergence(Y_test, predicted.reshape(-1), args.noise)
-            print(f"{row['d']}\t{row['M']}\t{row['T']}\t{row['noise']}\t{kl_divergence[0]}\t{hidden_dim}\t{args.dropout}\t{args.weight_decay}", flush=True)
+            print(
+                f"{row['d']}\t{row['M']}\t{row['T']}\t{row['noise']}"
+                f"\t{kl_divergence[0]}\t{hidden_dim}\t{row['dropout']}"
+                f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"
+                f"\t{row['patience']}\t{row['epochs']}\t{epoch_number}",
+                flush=True)
 
 
 def train(args):
