@@ -3,6 +3,7 @@ from single_layer import *
 import torch.nn as nn
 import pandas as pd
 
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(
@@ -42,33 +43,38 @@ def main():
     args = parser.parse_args()
     if args.file is None:
         train(args)
-    else: 
+    else:
         train_file(args)
+
 
 def train_file(args):
     config = pd.read_csv(args.file, sep="\t")
     for _, row in config.iterrows():
         hidden_dim = eval(row["model"])
         for _ in range(row["count"]):
-            (thetan, an, bn) = generate.generate_single_layer_v2(row["M"], row["d"], 1)
-            (X, Y_noiseless) = generate.generate_single_data_v2(row["T"], an, bn, thetan)
+            (thetan, an, bn) = generate.generate_single_layer_v2(
+                row["M"], row["d"], 1)
+            (X, Y_noiseless) = generate.generate_single_data_v2(
+                row["T"], an, bn, thetan)
             Y = generate.add_noise(Y_noiseless, row["noise"])
             input = X[0]
             (model, epoch_number, best_vloss, train_loss) = train_one_model(
-                hidden_dim, X[0], Y[0], 
-                val_ratio=args.val_ratio, 
-                lr=row["lr"], 
+                hidden_dim, X[0], Y[0],
+                val_ratio=args.val_ratio,
+                lr=row["lr"],
                 weight_decay=row["weight-decay"],
                 dropout=row["dropout"],
                 batch_size=row["batch-size"],
-                patience=row["patience"], 
+                patience=row["patience"],
                 epochs=row["epochs"],
                 verbose=False,
             )
             model.eval()
-            (X_test, Y_test) = generate.generate_single_data_v2(args.N_test, an, bn, thetan)
+            (X_test, Y_test) = generate.generate_single_data_v2(
+                args.N_test, an, bn, thetan)
             predicted = model(torch.Tensor(X_test)).detach().numpy()
-            kl_divergence = generate.kl_divergence(Y_test, predicted.reshape(-1), args.noise)
+            kl_divergence = generate.kl_divergence(
+                Y_test, predicted.reshape(-1), row["noise"])
             print(
                 f"{row['d']}\t{row['M']}\t{row['T']}\t{row['noise']}"
                 f"\t{kl_divergence[0]}\t{hidden_dim}\t{row['dropout']}"
@@ -85,21 +91,25 @@ def train(args):
             Y = generate.add_noise(Y_noiseless, args.noise)
             input = X[0]
             (model, epoch_number, best_vloss, train_loss) = train_one_model(
-                args.hidden_dim, X[0], Y[0], 
-                val_ratio=args.val_ratio, 
-                lr=args.lr, 
+                args.hidden_dim, X[0], Y[0],
+                val_ratio=args.val_ratio,
+                lr=args.lr,
                 weight_decay=args.weight_decay,
                 dropout=args.dropout,
                 batch_size=args.batch_size,
-                patience=args.patience, 
+                patience=args.patience,
                 epochs=args.epochs,
                 verbose=False,
             )
             model.eval()
-            (X_test, Y_test) = generate.generate_single_data_v2(args.N_test, an, bn, thetan)
+            (X_test, Y_test) = generate.generate_single_data_v2(
+                args.N_test, an, bn, thetan)
             predicted = model(torch.Tensor(X_test)).detach().numpy()
-            kl_divergence = generate.kl_divergence(Y_test, predicted.reshape(-1), args.noise)
-            print(f"{args.d}\t{args.M}\t{T}\t{args.noise}\t{kl_divergence[0]}\t{args.hidden_dim}\t{args.dropout}\t{args.weight_decay}", flush=True)
+            kl_divergence = generate.kl_divergence(
+                Y_test, predicted.reshape(-1), args.noise)
+            print(
+                f"{args.d}\t{args.M}\t{T}\t{args.noise}\t{kl_divergence[0]}\t{args.hidden_dim}\t{args.dropout}\t{args.weight_decay}", flush=True)
+
 
 if __name__ == "__main__":
     main()

@@ -9,9 +9,11 @@ import torch.nn.functional as F
 from torch.utils.data import TensorDataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
+
 class SingleLayer(nn.Module):
     """ Single Layer Model
     """
+
     def __init__(self, d, hidden_size, act=nn.LeakyReLU()):
         super(SingleLayer, self).__init__()
         self.fc1 = nn.Linear(d, hidden_size)
@@ -23,9 +25,11 @@ class SingleLayer(nn.Module):
         x = self.fc2(x)
         return x
 
+
 class MultiLayer(nn.Module):
     """ Multi Layer Model
     """
+
     def __init__(self, d, hidden_size, act=nn.LeakyReLU(), dropout=0, batchNorm=False):
         super(MultiLayer, self).__init__()
         self.n_hidden = len(hidden_size)
@@ -42,7 +46,6 @@ class MultiLayer(nn.Module):
             for hidden_size in hidden_size:
                 self.batch_norms.append(nn.BatchNorm1d(hidden_size))
 
-
     def forward(self, x):
         x = self.fcs[0](x)
         for i in range(self.n_hidden):
@@ -53,20 +56,22 @@ class MultiLayer(nn.Module):
             x = self.fcs[i+1](x)
         return x
 
+
 def get_data_loader(x, y, batch_size=100):
     """ Returns data_loader from numpy arrays.
     """
     tensor_x = torch.Tensor(x)
     tensor_y = torch.Tensor(y[..., np.newaxis])
-    dataset = TensorDataset(tensor_x,tensor_y)
+    dataset = TensorDataset(tensor_x, tensor_y)
     dataloader = DataLoader(dataset, batch_size=batch_size)
     return dataloader
+
 
 def train_one_epoch(
     model,
     optimizer,
     loss_fn,
-    training_loader, 
+    training_loader,
 ):
     """
     :return: average trainign loss
@@ -101,11 +106,11 @@ def train_early_stopping(
     model,
     optimizer,
     loss_fn,
-    training_loader, 
-    validation_loader, 
-    epochs = 1000,
-    patience = 5,
-    verbose = False,
+    training_loader,
+    validation_loader,
+    epochs=1000,
+    patience=5,
+    verbose=False,
 ):
     """ 
     :param patience: Number of epochs with no improvement after which training will be stopped
@@ -142,7 +147,7 @@ def train_early_stopping(
             print('LOSS train {} valid {}'.format(avg_loss, avg_vloss))
             writer.add_scalars(
                 'LOSS',
-                { 'Training' : avg_loss, 'Validation' : avg_vloss },
+                {'Training': avg_loss, 'Validation': avg_vloss},
                 epoch + 1
             )
             writer.flush()
@@ -150,24 +155,26 @@ def train_early_stopping(
             early_stopping += 1
         else:
             best_vloss = avg_vloss
+            best_avg_loss = avg_loss
             early_stopping = 0
             best_model_state = deepcopy(model.state_dict())
         if early_stopping >= patience:
             break
     model.load_state_dict(best_model_state)
 
-    return (epoch + 1, best_vloss, avg_loss)
+    return (epoch + 1, best_vloss, best_avg_loss)
+
 
 def train_one_model(
-    hidden_dim, x, y, 
+    hidden_dim, x, y,
     val_ratio=0.2,
-    lr = 0.001,
-    weight_decay = 0.01,
-    dropout = 0,
-    batch_size = 128,
-    model = None,
-    act = nn.LeakyReLU(),
-    batchNorm = False,
+    lr=0.001,
+    weight_decay=0.01,
+    dropout=0,
+    batch_size=128,
+    model=None,
+    act=nn.LeakyReLU(),
+    batchNorm=False,
     **train_kwargs,
 ):
     """
@@ -175,17 +182,20 @@ def train_one_model(
     (T, d) = x.shape
     val_size = int(T * val_ratio)
     if model is None:
-        model = MultiLayer(d, hidden_dim, dropout=dropout, act=act, batchNorm=batchNorm)
+        model = MultiLayer(d, hidden_dim, dropout=dropout,
+                           act=act, batchNorm=batchNorm)
     training_loader = get_data_loader(x[:-val_size], y[:-val_size], batch_size)
-    validation_loader = get_data_loader(x[-val_size:], y[-val_size:], batch_size)
+    validation_loader = get_data_loader(
+        x[-val_size:], y[-val_size:], batch_size)
     loss_fn = torch.nn.MSELoss(reduction='mean')
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    optimizer = torch.optim.Adam(
+        model.parameters(), lr=lr, weight_decay=weight_decay)
     (epoch_number, best_vloss, avg_loss) = train_early_stopping(
         model,
         optimizer,
         loss_fn,
-        training_loader, 
-        validation_loader, 
+        training_loader,
+        validation_loader,
         **train_kwargs,
     )
     return (model, epoch_number, best_vloss, avg_loss)
