@@ -57,13 +57,71 @@ class MultiLayer(nn.Module):
         return x
 
 
+class FastTensorDataLoader:
+    """
+    A DataLoader-like object for a set of tensors that can be much faster than
+    TensorDataset + DataLoader because dataloader grabs individual indices of
+    the dataset and calls cat (slow).
+    """
+
+    def __init__(self, *tensors, batch_size=32, shuffle=False):
+        """
+        Initialize a FastTensorDataLoader.
+
+        :param *tensors: tensors to store. Must have the same length @ dim 0.
+        :param batch_size: batch size to load.
+        :param shuffle: if True, shuffle the data *in-place* whenever an
+            iterator is created out of this object.
+
+        :returns: A FastTensorDataLoader.
+        """
+        assert all(t.shape[0] == tensors[0].shape[0] for t in tensors)
+        self.tensors = tensors
+
+        self.dataset_len = self.tensors[0].shape[0]
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+
+        # Calculate # batches
+        n_batches, remainder = divmod(self.dataset_len, self.batch_size)
+        if remainder > 0:
+            n_batches += 1
+        self.n_batches = n_batches
+
+    def __iter__(self):
+        if self.shuffle:
+            self.indices = torch.randperm(self.dataset_len)
+        else:
+            self.indices = None
+        self.i = 0
+        return self
+
+    def __next__(self):
+        if self.i >= self.dataset_len:
+            raise StopIteration
+        if self.indices is not None:
+            indices = self.indices[self.i:self.i+self.batch_size]
+            batch = tuple(torch.index_select(t, 0, indices)
+                          for t in self.tensors)
+        else:
+            batch = tuple(t[self.i:self.i+self.batch_size]
+                          for t in self.tensors)
+        self.i += self.batch_size
+        return batch
+
+    def __len__(self):
+        return self.n_batches
+
+
 def get_data_loader(x, y, batch_size=100):
     """ Returns data_loader from numpy arrays.
     """
     tensor_x = torch.Tensor(x)
     tensor_y = torch.Tensor(y[..., np.newaxis])
-    dataset = TensorDataset(tensor_x, tensor_y)
-    dataloader = DataLoader(dataset, batch_size=batch_size)
+    # dataset = TensorDataset(tensor_x, tensor_y)
+    # dataloader = DataLoader(dataset, batch_size=batch_size)
+    dataloader = FastTensorDataLoader(
+        tensor_x, tensor_y, batch_size=batch_size)
     return dataloader
 
 
@@ -116,6 +174,7 @@ def train_early_stopping(
     :param patience: Number of epochs with no improvement after which training will be stopped
     """
     from datetime import datetime
+    # import time
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     if verbose:
         writer = SummaryWriter('runs/{}'.format(timestamp))
@@ -124,6 +183,7 @@ def train_early_stopping(
     early_stopping = 0
 
     for epoch in range(epochs):
+        # t0 = time.time()
         if verbose:
             print('EPOCH {}:'.format(epoch + 1))
 
@@ -160,6 +220,8 @@ def train_early_stopping(
             best_model_state = deepcopy(model.state_dict())
         if early_stopping >= patience:
             break
+        # t1 = time.time()
+        # print(t1 - t0)
     model.load_state_dict(best_model_state)
 
     return (epoch + 1, best_vloss, best_avg_loss)
