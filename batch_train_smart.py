@@ -29,12 +29,19 @@ def train_file(args):
         for _ in range(row["count"]):
             (thetan, an, bn) = generate.generate_single_layer_v2(
                 row["M"], row["d"], 1)
+            # print("generating data..")
             (X, Y_noiseless) = generate.generate_single_data_v2(
                 row["T"], an, bn, thetan)
             Y = generate.add_noise(Y_noiseless, row["noise"])
+            hidden_dim_max = 16 + np.minimum(
+                2 * np.sqrt(row["M"] * row["d"]) + 2 *
+                np.maximum(row["M"], row["d"]),
+                2 * np.sqrt(row['T']),
+            )
+            # print("Starting hyperparam search")
             hyperParamOpt = smart_train.hyper_param_search(
                 X[0], Y[0],
-                hidden_dim_interval=(2, 2 * np.sqrt(row["T"])),
+                hidden_dim_interval=(2, hidden_dim_max),
                 val_ratio=args.val_ratio,
                 lr=row["lr"],
                 weight_decay=row["weight-decay"],
