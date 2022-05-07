@@ -49,6 +49,7 @@ def train_file(args):
                 batch_size=row["batch-size"],
                 patience=row["patience"],
                 epochs=row["epochs"],
+                reduceLROnPlateau=None if row["reduce-lr"] != 'T' else True,
                 verbose=False,
             )
             model = hyperParamOpt.model
@@ -62,7 +63,8 @@ def train_file(args):
                 f"{row['d']}\t{row['M']}\t{row['T']}\t{row['noise']}"
                 f"\t{kl_divergence}\t{hyperParamOpt.best_hidden_dim}\t{row['dropout']}"
                 f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"
-                f"\t{row['patience']}\t{row['epochs']}\t{hyperParamOpt.epoch_number}",
+                f"\t{row['patience']}\t{row['epochs']}\t{hyperParamOpt.epoch_number}"
+                f"\t{row['reduce-lr']}",
                 flush=True)
 
 

@@ -130,6 +130,7 @@ def train_one_epoch(
     optimizer,
     loss_fn,
     training_loader,
+    schedular=None,
 ):
     """
     :return: average trainign loss
@@ -157,6 +158,9 @@ def train_one_epoch(
         # Gather data and report
         running_loss += loss.item()
 
+        if schedular is not None:
+            schedular.step()
+
     return running_loss / (i+1)
 
 
@@ -168,6 +172,8 @@ def train_early_stopping(
     validation_loader,
     epochs=1000,
     patience=5,
+    cyclicLR=None,
+    reduceLROnPlateau=None,
     verbose=False,
 ):
     """ 
@@ -178,9 +184,9 @@ def train_early_stopping(
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     if verbose:
         writer = SummaryWriter('runs/{}'.format(timestamp))
-
     best_vloss = np.inf
     early_stopping = 0
+    last_lr = None
 
     for epoch in range(epochs):
         # t0 = time.time()
@@ -189,7 +195,8 @@ def train_early_stopping(
 
         # Make sure gradient tracking is on, and do a pass over the data
         model.train(True)
-        avg_loss = train_one_epoch(model, optimizer, loss_fn, training_loader)
+        avg_loss = train_one_epoch(
+            model, optimizer, loss_fn, training_loader, cyclicLR)
 
         # We don't need gradients on to do reporting
         model.train(False)
@@ -202,6 +209,9 @@ def train_early_stopping(
             running_vloss += vloss
 
         avg_vloss = running_vloss / (i + 1)
+
+        if reduceLROnPlateau is not None:
+            reduceLROnPlateau.step(avg_vloss)
 
         if verbose:
             print('LOSS train {} valid {}'.format(avg_loss, avg_vloss))
@@ -234,9 +244,12 @@ def train_one_model(
     weight_decay=0.01,
     dropout=0,
     batch_size=128,
+    val_batch_size=4096,
     model=None,
     act=nn.LeakyReLU(),
     batchNorm=False,
+    cyclicLR=None,
+    reduceLROnPlateau=None,
     **train_kwargs,
 ):
     """
@@ -248,16 +261,29 @@ def train_one_model(
                            act=act, batchNorm=batchNorm)
     training_loader = get_data_loader(x[:-val_size], y[:-val_size], batch_size)
     validation_loader = get_data_loader(
-        x[-val_size:], y[-val_size:], batch_size)
+        x[-val_size:], y[-val_size:], val_batch_size)
     loss_fn = torch.nn.MSELoss(reduction='mean')
     optimizer = torch.optim.Adam(
         model.parameters(), lr=lr, weight_decay=weight_decay)
+    if cyclicLR:
+        cyclicLR = torch.optim.lr_scheduler.CyclicLR(
+            optimizer, base_lr=lr / 10, max_lr=lr,
+            step_size_up=3 * ((T + batch_size - 1) // batch_size),
+            cycle_momentum=False,
+        )
+    if reduceLROnPlateau:
+        reduceLROnPlateau = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode='min', factor=0.1,
+            patience=12,
+        )
     (epoch_number, best_vloss, avg_loss) = train_early_stopping(
         model,
         optimizer,
         loss_fn,
         training_loader,
         validation_loader,
-        **train_kwargs,
+        cyclicLR=cyclicLR,
+        reduceLROnPlateau=reduceLROnPlateau,
+        ** train_kwargs,
     )
     return (model, epoch_number, best_vloss, avg_loss)
