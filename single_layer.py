@@ -8,6 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import TensorDataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from find_lr import find_lr
 
 
 class SingleLayer(nn.Module):
@@ -253,6 +254,7 @@ def train_one_model(
     **train_kwargs,
 ):
     """
+    :param lr: learning rate; if set to 0, will automatically choose learning rate via find_lr
     """
     (T, d) = x.shape
     val_size = int(T * val_ratio)
@@ -276,6 +278,15 @@ def train_one_model(
             optimizer, mode='min', factor=0.1,
             patience=12,
         )
+    if lr == 0:
+        lr = find_lr(
+            model=model, optimizer=optimizer, loss_fn=loss_fn,
+            data_loader=training_loader, plot=False,
+        )
+        for g in optimizer.param_groups:
+            g['lr'] = lr
+        if 'verbose' in train_kwargs.keys() and train_kwargs['verbose']:
+            print(f"automatically setting lr to {lr}")
     (epoch_number, best_vloss, avg_loss) = train_early_stopping(
         model,
         optimizer,
