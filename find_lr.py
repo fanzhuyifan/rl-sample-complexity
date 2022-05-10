@@ -4,7 +4,47 @@ import torch
 import numpy as np
 
 
-def valley(lrs: list, losses: list):
+def combined(lrs: list, losses: list):
+    """ Suggests a learning rate by combining the min_loss, valley, and steep methods
+    """
+    lr1, _ = min_loss(lrs, losses)
+    lr2, _ = valley(lrs, losses)
+    lr3, _ = steep(lrs, losses)
+    lr = np.median([lr1, lr2, lr3])
+    lrs_np = np.array(lrs)
+    idx_new = np.searchsorted(lrs_np, lr)
+    n = len(lrs)
+    idx_new = max(0, min(n-1, idx_new))
+
+    return lr, (lrs[idx_new], losses[idx_new])
+
+
+def steep(lrs: list, losses: list, n_grids: int = 10):
+    """ Suggests a learning rate by finding the index where descent is the sharpest
+    """
+    n = len(lrs)
+    grid_size = n // n_grids
+    losses_np = np.array(losses)
+    losses_grad = losses_np[grid_size:] - losses_np[:-grid_size]
+    idx = np.argmin(losses_grad) + grid_size // 2
+    return lrs[idx], (lrs[idx], losses[idx])
+
+
+def min_loss(lrs: list, losses: list, ratio=1/20):
+    """ Suggests a learning rate ratio of the minimum of the loss
+    """
+    losses_np = np.array(losses)
+    lrs_np = np.array(lrs)
+    n = len(lrs)
+    idx = np.argmin(losses_np)
+    lr = lrs[idx] * ratio
+    idx_new = np.searchsorted(lrs_np, lr)
+    idx_new = max(0, min(n-1, idx_new))
+
+    return lrs[idx], (lrs[idx], losses[idx])
+
+
+def valley(lrs: list, losses: list, ratio=0.5):
     """Suggests a learning rate from the longest valley and returns its index
 
     https://gist.github.com/muellerzr/0634c486bd4939049314632ccc3f7a03?permalink_comment_id=3733835
@@ -24,8 +64,7 @@ def valley(lrs: list, losses: list):
                 max_end = i
                 max_start = max_end - lds[max_end]
 
-    sections = (max_end - max_start) / 3
-    idx = max_start + int(sections) + int(sections/2)
+    idx = max_start + int((max_end - max_start) * ratio)
 
     return lrs[idx], (lrs[idx], losses[idx])
 
@@ -40,7 +79,7 @@ def find_lr(
     max_lr=10,
     l=1.01,
     beta=0.98,
-    method=valley,
+    method=combined,
 ):
     """ Find the learning rate by starting with a very small learning rate and exponentially increasing it each batch.
 
@@ -63,14 +102,28 @@ def find_lr(
         data_loader=data_loader, min_lr=min_lr, max_lr=max_lr,
         l=l, beta=beta,
     )
-    lr, point = method(lrs, losses)
+    if type(method) is list:
+        lr = []
+        point = []
+        for m in method:
+            a, b = m(lrs, losses)
+            lr.append(a)
+            point.append(b)
+    else:
+        lr, point = method(lrs, losses)
     if plot:
         ax = plt.subplot()
         ax.plot(
             lrs,
             losses,
         )
-        ax.plot(*point, 'ro')
+        if type(method) is list:
+            for p in point:
+                ax.plot(*p, 'o')
+            ax.legend(['loss vs lr'] + [m.__name__ for m in method])
+        else:
+            ax.plot(*point, 'o')
+            ax.legend(['loss vs lr', method.__name__])
         ax.set_xscale('log')
         ax.set_xlabel('lr')
         ax.set_ylabel('loss')
