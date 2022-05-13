@@ -1,11 +1,19 @@
+import torch.nn as nn
+import pandas as pd
+import sys
+import time
+import logging
 import generate as generate
 from single_layer import *
 import smart_train
-import torch.nn as nn
-import pandas as pd
 
 
 def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        stream=sys.stderr,
+        format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
+    )
     import argparse
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -18,6 +26,7 @@ def main():
         "--file", type=str, required=True, help="Config File Storing d, M, T, noise, hidden-dim, count, lr, weight-decay, dropout, patience, epochs, batch-size")
 
     args = parser.parse_args()
+
     train_file(args)
 
 
@@ -29,7 +38,6 @@ def train_file(args):
         for _ in range(row["count"]):
             (thetan, an, bn) = generate.generate_single_layer_v2(
                 row["M"], row["d"], 1)
-            # print("generating data..")
             (X, Y_noiseless) = generate.generate_single_data_v2(
                 row["T"], an, bn, thetan)
             Y = generate.add_noise(Y_noiseless, row["noise"])
@@ -38,7 +46,15 @@ def train_file(args):
                 np.maximum(row["M"], row["d"]),
                 2 * np.sqrt(row['T']),
             )
-            # print("Starting hyperparam search")
+            start_time = time.time()
+            logging.info("Start")
+            logging.info(
+                f"{row['d']}\t{row['M']}\t{row['T']}\t{row['noise']}"
+                f"\t{row['dropout']}"
+                f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"
+                f"\t{row['patience']}\t{row['epochs']}"
+                f"\t{row['reduce-lr']}",
+            )
             hyperParamOpt = smart_train.hyper_param_search(
                 X[0], Y[0],
                 hidden_dim_interval=(2, hidden_dim_max),
@@ -66,6 +82,8 @@ def train_file(args):
                 f"\t{row['patience']}\t{row['epochs']}\t{hyperParamOpt.epoch_number}"
                 f"\t{row['reduce-lr']}",
                 flush=True)
+            end_time = time.time()
+            logging.info(f"Finish: {end_time - start_time}")
 
 
 if __name__ == "__main__":

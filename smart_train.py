@@ -1,6 +1,8 @@
 """ Train a model with hyperparameter search
 """
 
+import logging
+import time
 import scipy as sp
 import numpy as np
 from scipy import optimize
@@ -29,11 +31,18 @@ class HyperParamOpt:
             return np.inf
 
         hidden_dim = int(np.power(2, log_hidden_dim))
+        logging.info(f"hidden_dim {hidden_dim}")
+        start_time = time.time()
         (model, epoch_number, best_vloss, train_loss) = train_one_model(
             [hidden_dim, hidden_dim, hidden_dim], self.X, self.Y,
             **self.fixed_params,
         )
         best_vloss = best_vloss.detach().numpy()
+        end_time = time.time()
+        logging.info(
+            f"hidden_dim {hidden_dim} "
+            f"vloss {best_vloss} train_loss {train_loss} "
+            f"time {end_time - start_time} epochs {epoch_number}")
         if best_vloss < self.best_loss:
             self.best_loss = best_vloss
             self.best_hidden_dim = hidden_dim
