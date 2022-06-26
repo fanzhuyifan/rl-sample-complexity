@@ -174,20 +174,21 @@ def train_early_stopping(
     validation_loader,
     epochs=1000,
     patience=5,
+    patience_tol=0,
     cyclicLR=None,
     reduceLROnPlateau=None,
     verbose=False,
 ):
     """ 
     :param patience: Number of epochs with no improvement after which training will be stopped
+    :param patience_tol: the relative tolerance for loss in early stopping; training will stop if loss do not decrease by patience_tol (relatively) in patience epochs.
     """
     from datetime import datetime
     # import time
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     if verbose:
         writer = SummaryWriter('runs/{}'.format(timestamp))
-    best_vloss = np.inf
-    early_stopping = 0
+    best_vlosses = [np.inf]
     last_lr = None
 
     for epoch in range(epochs):
@@ -228,20 +229,21 @@ def train_early_stopping(
                 epoch + 1
             )
             writer.flush()
-        if avg_vloss >= best_vloss:
-            early_stopping += 1
-        else:
-            best_vloss = avg_vloss
-            best_avg_loss = avg_loss
-            early_stopping = 0
+
+        if avg_vloss < best_vlosses[-1]:
             best_model_state = deepcopy(model.state_dict())
-        if early_stopping >= patience:
+            best_avg_loss = avg_loss
+            best_vlosses.append(avg_vloss)
+        else:
+            best_vlosses.append(best_vlosses[-1])
+        if len(best_vlosses) > patience and best_vlosses[-1] >= best_vlosses[-patience-1] * (1 - patience_tol):
             break
+
         # t1 = time.time()
         # print(t1 - t0)
     model.load_state_dict(best_model_state)
 
-    return (epoch + 1, best_vloss, best_avg_loss)
+    return (epoch + 1, best_vlosses[-1], best_avg_loss)
 
 
 def train_one_model(

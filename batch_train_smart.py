@@ -50,9 +50,9 @@ def train_file(args):
             logging.info("Start")
             logging.info(
                 f"{row['d']}\t{row['M']}\t{row['T']}\t{row['noise']}"
-                f"\t{row['dropout']}"
+                f"\t{row['act']}\t{row['dropout']}"
                 f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"
-                f"\t{row['patience']}\t{row['epochs']}"
+                f"\t{row['patience']}\t{row['patience-tol']}\t{row['epochs']}"
                 f"\t{row['reduce-lr']}",
             )
             hyperParamOpt = smart_train.hyper_param_search(
@@ -64,6 +64,7 @@ def train_file(args):
                 dropout=row["dropout"],
                 batch_size=row["batch-size"],
                 patience=row["patience"],
+                patience_tol=row["patience-tol"],
                 epochs=row["epochs"],
                 reduceLROnPlateau=None if row["reduce-lr"] != 'T' else True,
                 verbose=False,
@@ -79,8 +80,8 @@ def train_file(args):
                 f"{row['d']}\t{row['M']}\t{row['T']}\t{row['noise']}\t{row['act']}"
                 f"\t{kl_divergence}\t{hyperParamOpt.best_hidden_dim}\t{row['dropout']}"
                 f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"
-                f"\t{row['patience']}\t{row['epochs']}\t{hyperParamOpt.epoch_number}"
-                f"\t{row['reduce-lr']}",
+                f"\t{row['patience']}\t{row['patience-tol']}\t{row['epochs']}"
+                f"\t{hyperParamOpt.epoch_number}\t{row['reduce-lr']}",
                 flush=True)
             end_time = time.time()
             logging.info(f"Finish: {end_time - start_time}")
