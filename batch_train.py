@@ -52,9 +52,9 @@ def train_file(args):
     for _, row in config.iterrows():
         hidden_dim = eval(row["model"])
         for _ in range(row["count"]):
-            (thetan, an, bn) = generate.generate_single_layer_v2(
+            (thetan, an, bn) = generate.generate_single_layer(
                 row["M"], row["d"], 1)
-            (X, Y_noiseless) = generate.generate_single_data_v2(
+            (X, Y_noiseless) = generate.generate_single_data(
                 row["T"], an, bn, thetan)
             Y = generate.add_noise(Y_noiseless, row["noise"])
             input = X[0]
@@ -70,7 +70,7 @@ def train_file(args):
                 verbose=False,
             )
             model.eval()
-            (X_test, Y_test) = generate.generate_single_data_v2(
+            (X_test, Y_test) = generate.generate_single_data(
                 args.N_test, an, bn, thetan)
             predicted = model(torch.Tensor(X_test)).detach().numpy()
             kl_divergence = generate.kl_divergence(
@@ -86,8 +86,8 @@ def train_file(args):
 def train(args):
     for T in args.T:
         for _ in range(args.num_experiments):
-            (thetan, an, bn) = generate.generate_single_layer_v2(args.M, args.d, 1)
-            (X, Y_noiseless) = generate.generate_single_data_v2(T, an, bn, thetan)
+            (thetan, an, bn) = generate.generate_single_layer(args.M, args.d, 1)
+            (X, Y_noiseless) = generate.generate_single_data(T, an, bn, thetan)
             Y = generate.add_noise(Y_noiseless, args.noise)
             input = X[0]
             (model, epoch_number, best_vloss, train_loss) = train_one_model(
@@ -102,7 +102,7 @@ def train(args):
                 verbose=False,
             )
             model.eval()
-            (X_test, Y_test) = generate.generate_single_data_v2(
+            (X_test, Y_test) = generate.generate_single_data(
                 args.N_test, an, bn, thetan)
             predicted = model(torch.Tensor(X_test)).detach().numpy()
             kl_divergence = generate.kl_divergence(

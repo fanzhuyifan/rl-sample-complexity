@@ -36,9 +36,9 @@ def train_file(args):
     )
     for _, row in config.iterrows():
         for _ in range(row["count"]):
-            (thetan, an, bn) = generate.generate_single_layer_v2(
+            (thetan, an, bn) = generate.generate_single_layer(
                 row["M"], row["d"], 1)
-            (X, Y_noiseless) = generate.generate_single_data_v2(
+            (X, Y_noiseless) = generate.generate_single_data(
                 row["T"], an, bn, thetan)
             Y = generate.add_noise(Y_noiseless, row["noise"])
             hidden_dim_max = 16 + np.minimum(
@@ -70,7 +70,7 @@ def train_file(args):
             )
             model = hyperParamOpt.model
             model.eval()
-            (X_test, Y_test) = generate.generate_single_data_v2(
+            (X_test, Y_test) = generate.generate_single_data(
                 args.N_test, an, bn, thetan)
             predicted = model(torch.Tensor(X_test)).detach().numpy()
             kl_divergence = generate.kl_divergence(
