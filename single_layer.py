@@ -83,6 +83,7 @@ class FastTensorDataLoader:
         self.dataset_len = self.tensors[0].shape[0]
         self.batch_size = batch_size
         self.shuffle = shuffle
+        self.num_accesses = 0
 
         # Calculate # batches
         n_batches, remainder = divmod(self.dataset_len, self.batch_size)
@@ -109,6 +110,7 @@ class FastTensorDataLoader:
             batch = tuple(t[self.i:self.i+self.batch_size]
                           for t in self.tensors)
         self.i += self.batch_size
+        self.num_accesses += self.batch_size
         return batch
 
     def __len__(self):
@@ -304,4 +306,7 @@ def train_one_model(
         reduceLROnPlateau=reduceLROnPlateau,
         ** train_kwargs,
     )
-    return (model, epoch_number, best_vloss, avg_loss)
+    return (
+        model, epoch_number, best_vloss, avg_loss,
+        training_loader.num_accesses + validation_loader.num_accesses,
+    )

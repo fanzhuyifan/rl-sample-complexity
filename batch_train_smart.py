@@ -81,7 +81,8 @@ def train_file(args):
                 f"\t{kl_divergence}\t{hyperParamOpt.best_hidden_dim}\t{row['dropout']}"
                 f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"
                 f"\t{row['patience']}\t{row['patience-tol']}\t{row['epochs']}"
-                f"\t{hyperParamOpt.epoch_number}\t{row['reduce-lr']}",
+                f"\t{hyperParamOpt.epoch_number}\t{hyperParamOpt.num_accesses}"
+                f"\t{row['reduce-lr']}",
                 flush=True)
             end_time = time.time()
             logging.info(f"Finish: {end_time - start_time}")

@@ -24,6 +24,7 @@ class HyperParamOpt:
         self.model = None
         self.best_loss = np.inf
         self.epoch_number = None
+        self.num_accesses = 0
 
     def train(self, log_hidden_dim):
         if (log_hidden_dim < self.log_hidden_dim_interval[0]
@@ -33,10 +34,11 @@ class HyperParamOpt:
         hidden_dim = int(np.power(2, log_hidden_dim))
         logging.info(f"hidden_dim {hidden_dim}")
         start_time = time.time()
-        (model, epoch_number, best_vloss, train_loss) = train_one_model(
+        (model, epoch_number, best_vloss, train_loss, num_accesses) = train_one_model(
             [hidden_dim, hidden_dim, hidden_dim], self.X, self.Y,
             **self.fixed_params,
         )
+        self.num_accesses += num_accesses
         best_vloss = best_vloss.detach().numpy()
         end_time = time.time()
         logging.info(
