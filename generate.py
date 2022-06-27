@@ -13,8 +13,8 @@ def generate_single_layer(
     :param num: number of gs to generate
     :return: (thetan, an, bn), where thetan has shape (num, M), an has shape (num, M, d), and bn has shape (num, M)
     """
-    an = np.random.normal(0, 1 / np.sqrt(d), size=(num, M, d))
-    bn = np.random.normal(0, 1 / np.sqrt(d), size=(num, M))
+    an = np.random.normal(0, 1 / np.sqrt(d + 1), size=(num, M, d))
+    bn = np.random.normal(0, 1 / np.sqrt(d + 1), size=(num, M))
     thetan = np.random.normal(0, 1 / np.sqrt(M), size=(num, M))
     return (thetan, an, bn)
 
