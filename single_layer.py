@@ -110,7 +110,7 @@ class FastTensorDataLoader:
             batch = tuple(t[self.i:self.i+self.batch_size]
                           for t in self.tensors)
         self.i += self.batch_size
-        self.num_accesses += self.batch_size
+        self.num_accesses += batch[0].shape[0]
         return batch
 
     def __len__(self):
