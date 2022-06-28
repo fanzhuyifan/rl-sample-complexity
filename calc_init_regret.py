@@ -2,14 +2,24 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import generate as generate
+import multiprocessing
+from functools import partial
+
+
+def calc_regret_helper(_, N_test, M, d, act, noise):
+    (thetan, an, bn) = generate.generate_single_layer(M, d, 1)
+    (_, Y_test) = generate.generate_single_data(N_test, an, bn, thetan, act)
+    return generate.kl_divergence(Y_test.reshape(-1), 0, noise)
 
 
 def calc_init_regret(d, M, noise, act, N_test, N_trials):
-    result = np.zeros(N_trials)
-    for i in range(N_trials):
-        (thetan, an, bn) = generate.generate_single_layer(M, d, 1)
-        (_, Y_test) = generate.generate_single_data(N_test, an, bn, thetan, act)
-        result[i] = generate.kl_divergence(Y_test.reshape(-1), 0, noise)
+    pool = multiprocessing.Pool()
+
+    f = partial(calc_regret_helper, N_test=N_test,
+                M=M, d=d, act=act, noise=noise)
+    result = pool.imap_unordered(f, range(N_trials))
+    result = np.array(list(result))
+    pool.close()
     return result
 
 
