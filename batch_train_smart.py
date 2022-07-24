@@ -30,6 +30,27 @@ def main():
     train_file(args)
 
 
+def get_hidden_dim_max(hidden_layers, M, d, T):
+    """ Returns the maximum width of hidden layer to search for given the number of hidden layers and data generation parameters
+    """
+    if hidden_layers == 1:
+        return 32 + 8 * np.minimum(
+            np.sqrt(M * d) + np.maximum(M, d),
+            T,
+        )
+    if hidden_layers == 2:
+        return 32 + 2 * np.minimum(
+            2 * np.sqrt(M * d) + 2 * np.maximum(M, d),
+            2 * np.sqrt(T),
+        )
+    if hidden_layers == 3:
+        return 16 + np.minimum(
+            2 * np.sqrt(M * d) + 2 * np.maximum(M, d),
+            2 * np.sqrt(T),
+        )
+    assert(False)
+
+
 def train_file(args):
     config = pd.read_csv(
         args.file, sep="\t",
@@ -41,22 +62,24 @@ def train_file(args):
             (X, Y_noiseless) = generate.generate_single_data(
                 row["T"], an, bn, thetan, row["act"])
             Y = generate.add_noise(Y_noiseless, row["noise"])
-            hidden_dim_max = 16 + np.minimum(
-                2 * np.sqrt(row["M"] * row["d"]) + 2 *
-                np.maximum(row["M"], row["d"]),
-                2 * np.sqrt(row['T']),
+            hidden_dim_max = get_hidden_dim_max(
+                row["hidden-layers"],
+                row["M"],
+                row["d"],
+                row["T"],
             )
             start_time = time.time()
             logging.info("Start")
             logging.info(
                 f"{row['d']}\t{row['M']}\t{row['T']}\t{row['noise']}"
-                f"\t{row['act']}\t{row['dropout']}"
+                f"\t{row['act']}\t{row['dropout']}\t{row['hidden-layers']}"
                 f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"
                 f"\t{row['patience']}\t{row['patience-tol']}\t{row['epochs']}"
                 f"\t{row['reduce-lr']}",
             )
             hyperParamOpt = smart_train.hyper_param_search(
                 X[0], Y[0],
+                hidden_layers=row["hidden-layers"],
                 hidden_dim_interval=(2, hidden_dim_max),
                 val_ratio=args.val_ratio,
                 lr=row["lr"],
@@ -78,7 +101,8 @@ def train_file(args):
                 Y_test.reshape(-1), predicted.reshape(-1), row["noise"])
             print(
                 f"{row['d']}\t{row['M']}\t{row['T']}\t{row['noise']}\t{row['act']}"
-                f"\t{kl_divergence}\t{hyperParamOpt.best_hidden_dim}\t{row['dropout']}"
+                f"\t{kl_divergence}\t{row['hidden-layers']}"
+                f"\t{hyperParamOpt.best_hidden_dim}\t{row['dropout']}"
                 f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"
                 f"\t{row['patience']}\t{row['patience-tol']}\t{row['epochs']}"
                 f"\t{hyperParamOpt.epoch_number}\t{hyperParamOpt.num_accesses}"

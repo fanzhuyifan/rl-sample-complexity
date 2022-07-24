@@ -14,7 +14,8 @@ class HyperParamOpt:
     Keeps track of the best performing model and the corresponding hyperparameters
     """
 
-    def __init__(self, X, Y, log_hidden_dim_interval, **fixed_params) -> None:
+    def __init__(self, X, Y, hidden_layers, log_hidden_dim_interval, **fixed_params) -> None:
+        self.hidden_layers = hidden_layers
         self.log_hidden_dim_interval = log_hidden_dim_interval
         self.fixed_params = fixed_params
         self.X = X
@@ -35,7 +36,7 @@ class HyperParamOpt:
         logging.info(f"hidden_dim {hidden_dim}")
         start_time = time.time()
         (model, epoch_number, best_vloss, train_loss, num_accesses) = train_one_model(
-            [hidden_dim, hidden_dim, hidden_dim], self.X, self.Y,
+            [hidden_dim] * self.hidden_layers, self.X, self.Y,
             **self.fixed_params,
         )
         self.num_accesses += num_accesses
@@ -64,6 +65,7 @@ class HyperParamOpt:
 def hyper_param_search(
     X,
     Y,
+    hidden_layers,
     hidden_dim_interval,
     maxiter=100,
     **hyper_params
@@ -74,6 +76,7 @@ def hyper_param_search(
         np.log2(hidden_dim_interval[0]), np.log2(hidden_dim_interval[1]))
     hyperParamOpt = HyperParamOpt(
         X, Y,
+        hidden_layers,
         log_hidden_dim_interval,
         **hyper_params
     )
