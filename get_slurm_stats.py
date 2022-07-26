@@ -38,7 +38,7 @@ def main(jobId):
         time_max, time_mean, time_median))
 
     mems = [o[1] for o in output]
-    mems = np.array([float(m[:-1]) for m in mems])
+    mems = np.array([float(m[:-1]) for m in mems if len(m) > 1])
     mem_max = np.max(mems)
     mem_mean = np.mean(mems)
     mem_median = np.median(mems)
