@@ -46,37 +46,52 @@ def train_file(args):
             logging.info(
                 f"{row['d']}\t{row['M']}\t{row['T']}\t{row['noise']}"
                 f"\t{row['act']}\t{row['dropout']}"
-                f"\t{row['model']}\t{row['hidden-layers']}"
+                f"\t{row['model']}\t{row['hidden-layers']}\t{row['trials']}"
                 f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"
                 f"\t{row['patience']}\t{row['patience-tol']}\t{row['epochs']}"
                 f"\t{row['reduce-lr']}",
             )
-            (model, epoch_number, best_vloss, train_loss, num_accesses) = train_one_model(
-                [row["model"]] * row["hidden-layers"], X[0], Y[0],
-                val_ratio=args.val_ratio,
-                lr=row["lr"],
-                weight_decay=row["weight-decay"],
-                dropout=row["dropout"],
-                batch_size=row["batch-size"],
-                patience=row["patience"],
-                patience_tol=row["patience-tol"],
-                epochs=row["epochs"],
-                reduceLROnPlateau=None if row["reduce-lr"] != 'T' else True,
-                verbose=False,
-            )
-            model.eval()
+            best_model = None
+            best_vloss = np.inf
+            total_num_accesses = 0
+            for _ in range(row["trials"]):
+                (model, epoch_number, vloss, train_loss, num_accesses) = train_one_model(
+                    [row["model"]] * row["hidden-layers"], X[0], Y[0],
+                    val_ratio=args.val_ratio,
+                    lr=row["lr"],
+                    weight_decay=row["weight-decay"],
+                    dropout=row["dropout"],
+                    batch_size=row["batch-size"],
+                    patience=row["patience"],
+                    patience_tol=row["patience-tol"],
+                    epochs=row["epochs"],
+                    reduceLROnPlateau=None if row["reduce-lr"] != 'T' else True,
+                    verbose=False,
+                )
+                total_num_accesses += num_accesses
+                if vloss < best_vloss:
+                    best_vloss = vloss
+                    best_model = model
+                    best_model.eval()
+                    (X_test, Y_test) = generate.generate_single_data(
+                        args.N_test, an, bn, thetan, row["act"])
+                    predicted = best_model(
+                        torch.Tensor(X_test)).detach().numpy()
+                    kl_divergence = generate.kl_divergence(
+                        Y_test.reshape(-1), predicted.reshape(-1), row["noise"])
+            best_model.eval()
             (X_test, Y_test) = generate.generate_single_data(
                 args.N_test, an, bn, thetan, row["act"])
-            predicted = model(torch.Tensor(X_test)).detach().numpy()
+            predicted = best_model(torch.Tensor(X_test)).detach().numpy()
             kl_divergence = generate.kl_divergence(
                 Y_test.reshape(-1), predicted.reshape(-1), row["noise"])
             print(
                 f"{row['d']}\t{row['M']}\t{row['T']}\t{row['noise']}\t{row['act']}"
                 f"\t{kl_divergence}\t{row['hidden-layers']}"
-                f"\t{row['model']}\t{row['dropout']}"
+                f"\t{row['model']}\t{row['trials']}\t{row['dropout']}"
                 f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"
                 f"\t{row['patience']}\t{row['patience-tol']}\t{row['epochs']}"
-                f"\t{epoch_number}\t{num_accesses}"
+                f"\t{epoch_number}\t{total_num_accesses}"
                 f"\t{row['reduce-lr']}",
                 flush=True)
             end_time = time.time()
