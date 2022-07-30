@@ -230,6 +230,11 @@ def train_early_stopping(
                 {'Training': avg_loss, 'Validation': avg_vloss},
                 epoch + 1
             )
+            writer.add_scalar(
+                'LR',
+                optimizer.param_groups[0]['lr'],
+                epoch + 1
+            )
             writer.flush()
 
         if avg_vloss < best_vlosses[-1]:
@@ -257,7 +262,7 @@ def train_one_model(
     batch_size=128,
     val_batch_size=4096,
     model=None,
-    act=nn.LeakyReLU(),
+    act=nn.ReLU(),
     batchNorm=False,
     cyclicLR=None,
     reduceLROnPlateau=None,
