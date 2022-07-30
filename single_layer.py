@@ -272,7 +272,7 @@ def train_one_model(
     :param lr: learning rate; if set to 0, will automatically choose learning rate via find_lr
     """
     (T, d) = x.shape
-    val_size = int(T * val_ratio)
+    val_size = int(T * val_ratio + 1)
     if model is None:
         model = MultiLayer(d, hidden_dim, dropout=dropout,
                            act=act, batchNorm=batchNorm)
