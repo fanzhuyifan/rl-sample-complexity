@@ -1,11 +1,16 @@
-import torch.nn as nn
-import pandas as pd
-import sys
-import time
-import logging
-import generate as generate
-from single_layer import *
 import smart_train
+from single_layer import *
+import generate as generate
+import logging
+import time
+import pandas as pd
+import torch.nn as nn
+import sys
+import os
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if os.path.dirname(SCRIPT_DIR) not in sys.path:
+    sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 
 def main():
