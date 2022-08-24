@@ -53,9 +53,9 @@ def train_file(args):
             )
             best_model = None
             best_vloss = np.inf
-            total_num_accesses = 0
+            total_num_queries = 0
             for _ in range(row["trials"]):
-                (model, epoch_number, vloss, train_loss, num_accesses) = train_one_model(
+                (model, epoch_number, vloss, train_loss, num_queries) = train_one_model(
                     [row["model"]] * row["hidden-layers"], X[0], Y[0],
                     val_ratio=args.val_ratio,
                     lr=row["lr"],
@@ -68,7 +68,7 @@ def train_file(args):
                     reduceLROnPlateau=None if row["reduce-lr"] != 'T' else True,
                     verbose=False,
                 )
-                total_num_accesses += num_accesses
+                total_num_queries += num_queries
                 if vloss < best_vloss:
                     best_vloss = vloss
                     best_model = model
@@ -91,7 +91,7 @@ def train_file(args):
                 f"\t{row['model']}\t{row['trials']}\t{row['dropout']}"
                 f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"
                 f"\t{row['patience']}\t{row['patience-tol']}\t{row['epochs']}"
-                f"\t{epoch_number}\t{total_num_accesses}"
+                f"\t{epoch_number}\t{total_num_queries}"
                 f"\t{row['reduce-lr']}",
                 flush=True)
             end_time = time.time()

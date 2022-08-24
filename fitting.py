@@ -63,6 +63,8 @@ class FastTensorDataLoader:
     TensorDataset + DataLoader because dataloader grabs individual indices of
     the dataset and calls cat (slow).
 
+    Saves the total number of queries to datapoints.
+
     https://discuss.pytorch.org/t/dataloader-much-slower-than-manual-batching/27014/4
     """
 
@@ -83,7 +85,7 @@ class FastTensorDataLoader:
         self.dataset_len = self.tensors[0].shape[0]
         self.batch_size = batch_size
         self.shuffle = shuffle
-        self.num_accesses = 0
+        self.num_queries = 0
 
         # Calculate # batches
         n_batches, remainder = divmod(self.dataset_len, self.batch_size)
@@ -110,7 +112,7 @@ class FastTensorDataLoader:
             batch = tuple(t[self.i:self.i+self.batch_size]
                           for t in self.tensors)
         self.i += self.batch_size
-        self.num_accesses += batch[0].shape[0]
+        self.num_queries += batch[0].shape[0]
         return batch
 
     def __len__(self):
@@ -309,5 +311,5 @@ def train_one_model(
     )
     return (
         model, epoch_number, best_vloss, avg_loss,
-        training_loader.num_accesses + validation_loader.num_accesses,
+        training_loader.num_queries + validation_loader.num_queries,
     )
