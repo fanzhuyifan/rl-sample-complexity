@@ -5,7 +5,8 @@ import numpy as np
 
 
 def combined(lrs: list, losses: list):
-    """ Suggests a learning rate by combining the min_loss, valley, and steep methods
+    """ Suggests a learning rate by combining the min_loss, valley, and steep methods.
+    Uses the median of the result returned by the three methods
     """
     lr1, _ = min_loss(lrs, losses)
     lr2, _ = valley(lrs, losses)
@@ -21,6 +22,8 @@ def combined(lrs: list, losses: list):
 
 def steep(lrs: list, losses: list, n_grids: int = 10):
     """ Suggests a learning rate by finding the index where descent is the sharpest
+
+    https://gist.github.com/muellerzr/0634c486bd4939049314632ccc3f7a03?permalink_comment_id=3733835
     """
     n = len(lrs)
     grid_size = n // n_grids
@@ -32,6 +35,8 @@ def steep(lrs: list, losses: list, n_grids: int = 10):
 
 def min_loss(lrs: list, losses: list, ratio=1/20):
     """ Suggests a learning rate ratio of the minimum of the loss
+
+    https://gist.github.com/muellerzr/0634c486bd4939049314632ccc3f7a03?permalink_comment_id=3733835
     """
     losses_np = np.array(losses)
     lrs_np = np.array(lrs)
@@ -82,6 +87,7 @@ def find_lr(
     method=combined,
 ):
     """ Find the learning rate by starting with a very small learning rate and exponentially increasing it each batch.
+    Saves the states of the model and the optimizer and resets them before returning.
 
     https://sgugger.github.io/how-do-you-find-a-good-learning-rate.html
     :param model: the state of the model will be saved and reloaded
@@ -144,7 +150,8 @@ def _find_lr_train(
     l,
     beta,
 ):
-    """ Perform training for find_lr
+    """ Perform training for find_lr.
+    Stops training if smoothed_loss > 4 * min_loss
     """
     for g in optimizer.param_groups:
         g['lr'] = min_lr
