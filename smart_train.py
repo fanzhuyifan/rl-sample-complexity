@@ -6,7 +6,7 @@ import time
 import scipy as sp
 import numpy as np
 from scipy import optimize
-from single_layer import train_one_model
+from fitting import train_one_model
 
 
 class HyperParamOpt:

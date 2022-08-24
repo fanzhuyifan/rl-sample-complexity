@@ -4,7 +4,7 @@ import sys
 import time
 import logging
 import generate as generate
-from single_layer import *
+from fitting import *
 import smart_train
 
 

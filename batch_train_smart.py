@@ -1,5 +1,5 @@
 import smart_train
-from single_layer import *
+from fitting import *
 import generate as generate
 import logging
 import time

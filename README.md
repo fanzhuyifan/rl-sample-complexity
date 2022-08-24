@@ -2,5 +2,7 @@
 # Overview of files
 ## `generate.py`
 Helper functions related to generating single-hidden-layer teacher networks, generating data from these teacher networks, and calculating error.
+## `fitting.py`
+Helper functions and classes for fitting teacher networks.
 
 # Example Code
