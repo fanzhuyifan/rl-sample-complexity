@@ -65,18 +65,18 @@ def train_file(args):
             (thetan, an, bn) = generate.generate_single_layer(
                 row["M"], row["d"], 1)
             (X, Y_noiseless) = generate.generate_single_data(
-                row["T"], an, bn, thetan, row["act"])
+                row["N"], an, bn, thetan, row["act"])
             Y = generate.add_noise(Y_noiseless, row["noise"])
             hidden_dim_max = get_hidden_dim_max(
                 row["hidden-layers"],
                 row["M"],
                 row["d"],
-                row["T"],
+                row["N"],
             )
             start_time = time.time()
             logging.info("Start")
             logging.info(
-                f"{row['d']}\t{row['M']}\t{row['T']}\t{row['noise']}"
+                f"{row['d']}\t{row['M']}\t{row["N"]}\t{row['noise']}"
                 f"\t{row['act']}\t{row['dropout']}\t{row['hidden-layers']}"
                 f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"
                 f"\t{row['patience']}\t{row['patience-tol']}\t{row['epochs']}"
@@ -105,7 +105,7 @@ def train_file(args):
             kl_divergence = generate.kl_divergence(
                 Y_test.reshape(-1), predicted.reshape(-1), row["noise"])
             print(
-                f"{row['d']}\t{row['M']}\t{row['T']}\t{row['noise']}\t{row['act']}"
+                f"{row['d']}\t{row['M']}\t{row["N"]}\t{row['noise']}\t{row['act']}"
                 f"\t{kl_divergence}\t{row['hidden-layers']}"
                 f"\t{hyperParamOpt.best_hidden_dim}\t{row['dropout']}"
                 f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"

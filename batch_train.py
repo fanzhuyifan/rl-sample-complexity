@@ -5,7 +5,6 @@ import time
 import logging
 import generate as generate
 from fitting import *
-import smart_train
 
 
 def main():
@@ -39,12 +38,12 @@ def train_file(args):
             (thetan, an, bn) = generate.generate_single_layer(
                 row["M"], row["d"], 1)
             (X, Y_noiseless) = generate.generate_single_data(
-                row["T"], an, bn, thetan, row["act"])
+                row["N"], an, bn, thetan, row["act"])
             Y = generate.add_noise(Y_noiseless, row["noise"])
             start_time = time.time()
             logging.info("Start")
             logging.info(
-                f"{row['d']}\t{row['M']}\t{row['T']}\t{row['noise']}"
+                f"{row['d']}\t{row['M']}\t{row["N"]}\t{row['noise']}"
                 f"\t{row['act']}\t{row['dropout']}"
                 f"\t{row['model']}\t{row['hidden-layers']}\t{row['trials']}"
                 f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"
@@ -86,7 +85,7 @@ def train_file(args):
             kl_divergence = generate.kl_divergence(
                 Y_test.reshape(-1), predicted.reshape(-1), row["noise"])
             print(
-                f"{row['d']}\t{row['M']}\t{row['T']}\t{row['noise']}\t{row['act']}"
+                f"{row['d']}\t{row['M']}\t{row["N"]}\t{row['noise']}\t{row['act']}"
                 f"\t{kl_divergence}\t{row['hidden-layers']}"
                 f"\t{row['model']}\t{row['trials']}\t{row['dropout']}"
                 f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"
