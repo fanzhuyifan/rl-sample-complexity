@@ -10,4 +10,7 @@ The main entrypoint is `train_one_model`.
 ## `find_lr.py`
 Contains helper methods for automatically finding the learning rate (`find_lr`).
 
+## `batch_train.py`
+The main module for running experiments *without* automatic width tuning.
+
 # Example Code
