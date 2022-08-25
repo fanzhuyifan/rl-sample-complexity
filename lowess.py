@@ -3,6 +3,8 @@ def lowess_with_confidence_bounds(
 ):
     """
     Perform Lowess regression and determine a confidence interval by bootstrap resampling
+
+    https://www.statsmodels.org/dev/examples/notebooks/generated/lowess.html
     """
     import statsmodels.api as sm
     import numpy as np

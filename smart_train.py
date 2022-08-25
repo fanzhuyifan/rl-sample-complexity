@@ -1,9 +1,8 @@
-""" Train a model with hyperparameter search
+""" Train a model with automatic width selection
 """
 
 import logging
 import time
-import scipy as sp
 import numpy as np
 from scipy import optimize
 from fitting import train_one_model
@@ -70,7 +69,7 @@ def hyper_param_search(
     maxiter=100,
     **hyper_params
 ):
-    """ Search in the space of hidden dimension sizes fixing other hyperparameters, and assuming the validation loss is a unimodal function of hidden dimension size.
+    """ Search in the space of network width fixing other hyperparameters, and assuming the validation loss is a unimodal function of hidden dimension size.
     """
     log_hidden_dim_interval = (
         np.log2(hidden_dim_interval[0]), np.log2(hidden_dim_interval[1]))

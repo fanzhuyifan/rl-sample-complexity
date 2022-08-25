@@ -1,10 +1,32 @@
+""" Given a configuration file, generates teacher networks, fits the data, and outputs the fitting results.
+Automatic width tuning is performed.
+
+The configuration file is a tsv with the following columns:
+- d: input dimension
+- M: width of teacher network
+- noise: standard deviation of the Gaussian noise
+- act: activation function of teacher network, must be one of 'relu' or 'sign'
+- N: number of samples to generate for each teacher network
+- hidden-layers: number of hidden layers in the fitting network
+- patience: the patience for early stopping
+- patience-tol: the relative tolerance for early stopping; if the best validation loss does not decrease by patience-tol in patience epochs, training is stopped.
+- batch-size: the batch size used in training
+- lr: learning rate; set to 0 for automatic learning rate tuning
+- reduce-lr: set to 'T' to reduce learning rate on plateau
+- dropout: set to 0 for the experiments in the paper
+- weight-decay: set to 0 for the experiments in the paper
+- count: number of experiments to run for the given configuration
+- epochs: hard cap on number of epochs to train; set to 1500
+- comment: any comment
+
+"""
+
 import smart_train
 from fitting import *
 import generate as generate
 import logging
 import time
 import pandas as pd
-import torch.nn as nn
 import sys
 import os
 
@@ -76,7 +98,7 @@ def train_file(args):
             start_time = time.time()
             logging.info("Start")
             logging.info(
-                f"{row['d']}\t{row['M']}\t{row["N"]}\t{row['noise']}"
+                f"{row['d']}\t{row['M']}\t{row['N']}\t{row['noise']}"
                 f"\t{row['act']}\t{row['dropout']}\t{row['hidden-layers']}"
                 f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"
                 f"\t{row['patience']}\t{row['patience-tol']}\t{row['epochs']}"
@@ -105,7 +127,7 @@ def train_file(args):
             kl_divergence = generate.kl_divergence(
                 Y_test.reshape(-1), predicted.reshape(-1), row["noise"])
             print(
-                f"{row['d']}\t{row['M']}\t{row["N"]}\t{row['noise']}\t{row['act']}"
+                f"{row['d']}\t{row['M']}\t{row['N']}\t{row['noise']}\t{row['act']}"
                 f"\t{kl_divergence}\t{row['hidden-layers']}"
                 f"\t{hyperParamOpt.best_hidden_dim}\t{row['dropout']}"
                 f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"

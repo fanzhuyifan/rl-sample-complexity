@@ -11,6 +11,7 @@ The configuration file is a tsv with the following columns:
 - fitting-width: the width of the fitting network
 - patience: the patience for early stopping
 - patience-tol: the relative tolerance for early stopping; if the best validation loss does not decrease by patience-tol in patience epochs, training is stopped.
+- batch-size: the batch size used in training
 - lr: learning rate; set to 0 for automatic learning rate tuning
 - reduce-lr: set to 'T' to reduce learning rate on plateau
 - dropout: set to 0 for the experiments in the paper
