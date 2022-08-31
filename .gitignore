@@ -3,5 +3,6 @@
 
 !**/.gitignore
 !**/*.md
+!**/*.tsv
 !**/*.py
 !**/*.ipynb
