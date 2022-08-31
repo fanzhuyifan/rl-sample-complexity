@@ -47,3 +47,8 @@ Generates a config file where
 cp result_header_tune.tsv result_1.tsv && python batch_train_smart.py --file config_1.tsv 2>/dev/null >> result_1.tsv
 ```
 Trains on the previous configuration file, discarding debug output and storing the result into `result_1.tsv`.
+
+```bash
+python summarize_results.py -i result_1.tsv -o analysis_1.csv
+```
+Summarizes the results and stores into `analysis_1.csv`.

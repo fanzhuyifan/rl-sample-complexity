@@ -1,1 +1,1 @@
-d	M	T	noise	act	regret	hidden-layers	model	dropout	weight-decay	lr	batch-size	patience	patience-tol	epochs	epoch_number	num_accesses	reduce-lr
+d	M	N	noise	act	regret	hidden-layers	model	dropout	weight-decay	lr	batch-size	patience	patience-tol	epochs	epoch_number	num_queries	reduce-lr
