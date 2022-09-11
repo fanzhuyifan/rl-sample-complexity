@@ -24,6 +24,20 @@ def add_cols(data, args):
         data['fitting-width'] = 4 * data['M']
     elif args.width == 'same':
         data['fitting-width'] = data['M']
+    elif args.width == 'best':
+        results = pd.read_csv(args.reference, sep='\t')
+        results = results.groupby(['d', 'M', 'noise', 'N', 'hidden-layers']).agg(
+            width_median=pd.NamedAgg(column="fitting-width", aggfunc="median"),
+        ).reset_index()
+        results['fitting-width'] = results['width_median'].astype('int')
+        results = results[['d', 'M', 'noise', 'N',
+                           'hidden-layers', 'fitting-width']]
+        data = data.merge(
+            results,
+            on=['d', 'M', 'noise', 'N', 'hidden-layers'],
+            how='left',
+        )
+        assert (not data.isnull().values.any()), "Reference results don't cover all cases"
 
     return data
 
@@ -51,8 +65,8 @@ def generate_fixed_N(args):
         int(np.log2(args.M)),
         args.noises,
     )
-    data = add_cols(candidates, args)
     data['N'] = args.N
+    data = add_cols(candidates, args)
     data.to_csv(args.output, sep='\t', index=False)
 
 
@@ -137,6 +151,12 @@ def generate_target_epsilon(args):
     data.to_csv(args.output, sep='\t', index=False)
 
 
+def generate_duplicate(args):
+    candidates = pd.read_csv(args.config, sep='\t')
+    candidates = candidates[['d', 'M', 'noise', 'N']].drop_duplicates()
+    data = add_cols(candidates, args)
+    data.to_csv(args.output, sep='\t', index=False)
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(
@@ -146,8 +166,13 @@ def main():
         "-w",
         "--width",
         help="Width Tuning Method",
-        choices=["tune", "same", "4M"],
+        choices=["tune", "same", "4M", "best"],
         required=True
+    )
+    parser.add_argument(
+        "--reference",
+        help="Reference result, only needed when width is set to best",
+        required=False
     )
     parser.add_argument(
         "--hidden",
@@ -178,7 +203,7 @@ def main():
 
     parser_epsilon = subparsers.add_parser(
         'target-epsilon',
-        help="Try to reach a target epsilon (for each (d, M, noise) pair, make sure the biggest error is above epsilon and the smallest error is below epsilon, by doubling and halving the sample size)",
+        help="Try to reach a target epsilon (for each (d, M, noise) tuple, make sure the biggest error is above epsilon and the smallest error is below epsilon, by doubling and halving the sample size)",
     )
     parser_epsilon.add_argument(
         "-e",
@@ -233,11 +258,30 @@ def main():
         required=True,
     )
 
+    parser_duplicate = subparsers.add_parser(
+        'duplicate',
+        help="Duplicates the (d,M,N,noise) tuples in a provided config file, but with different settings",
+    )
+
+    parser_duplicate.add_argument(
+        '--config',
+        help='The config file to duplicate',
+        type=str,
+        required=True,
+    )
+
     args = parser.parse_args()
+    if args.width == "best":
+        assert args.reference, "Reference result file must be provided when using best width."
+
     if args.subcommand == 'fixed-N':
         generate_fixed_N(args)
     elif args.subcommand == 'target-epsilon':
         generate_target_epsilon(args)
+    elif args.subcommand == 'duplicate':
+        generate_duplicate(args)
+    else:
+        raise(Exception(f"subcommand not implemented: {args.subcommand}"))
     print(args)
 
 

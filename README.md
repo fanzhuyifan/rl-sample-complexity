@@ -1,4 +1,3 @@
-# About
 # Overview of files
 ## Python source files
 ### `generate.py`
@@ -87,3 +86,14 @@ python3 generate_config.py -w tune --hidden 1 --count 2 -o config_3.tsv target-e
 ```
 Based on the results in `analysis_1.csv`, try to reach a target epsilon of 0.1 for all (d, M, noise) tuples in `analysis_1.csv`.
 The sample size N is doubled if epsilon is too big, and halved otherwise.
+
+-----
+```bash
+python3 generate_config.py -w best --hidden 1 --count 2 -o config_4.tsv --reference result_1.tsv duplicate --config config_1.tsv
+```
+Generate a configuration file just like `config_1.tsv`, but with the width set to the best width.
+
+# On parallel computation
+Since the batch size is fixed to something small, we discovered that the speed does not improve with multi-threading.
+Hence, to improve throughput, we executed different jobs on different cores using slurm.
+Without a slurm cluster, this could be done with `gnu parallel`.
