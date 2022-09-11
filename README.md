@@ -79,3 +79,11 @@ Trains on the previous configuration file, discarding debug output and storing t
 python summarize_results.py -i result_2.tsv -o analysis_2.csv
 ```
 Summarizes the results and stores into `analysis_2.csv`.
+
+----- 
+
+```bash
+python3 generate_config.py -w tune --hidden 1 --count 2 -o config_3.tsv target-epsilon -e 0.1 -f analysis_1.csv
+```
+Based on the results in `analysis_1.csv`, try to reach a target epsilon of 0.1 for all (d, M, noise) tuples in `analysis_1.csv`.
+The sample size N is doubled if epsilon is too big, and halved otherwise.
