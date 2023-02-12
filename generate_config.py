@@ -65,8 +65,8 @@ def generate_fixed_N(args):
         int(np.log2(args.M)),
         args.noises,
     )
-    data['N'] = args.N
     data = add_cols(candidates, args)
+    data['N'] = args.N
     data.to_csv(args.output, sep='\t', index=False)
 
 
