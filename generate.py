@@ -19,6 +19,24 @@ def generate_single_layer(
     return (thetan, an, bn)
 
 
+def generate_single_sparse_layer(
+    K, M, d, num,
+):
+    """
+    :param K: sparsity parameter
+    :param M: width (number of hidden neurons)
+    :param d: input dimension
+    :param num: number of teacher networks to generate
+    :return: (thetan, an, bn), where thetan has shape (num, M), an has shape (num, M, d), and bn has shape (num, M)
+    """
+    an = np.random.normal(0, 1, size=(num, M, d))
+    an /= np.linalg.norm(an, axis=-1, ord=2, keepdims=True)
+    bn = np.zeros((num, M))
+    alpha = np.ones(M) * K / M
+    thetan = np.random.dirichlet(alpha, num)
+    return (thetan, an, bn)
+
+
 def generate_single_data(
     N, an, bn, thetan, act="sign",
 ):

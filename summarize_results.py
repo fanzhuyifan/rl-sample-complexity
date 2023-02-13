@@ -1,9 +1,13 @@
 import pandas as pd
 import numpy as np
+import os
 
 
 def summarize(input_file, output_file):
-    data = pd.read_table(input_file)
+    if os.path.splitext(input_file)[1] in [".csv", ".tsv"]:
+        data = pd.read_table(input_file)
+    else:
+        data = pd.read_excel(input_file)
     if data.duplicated().any():
         print("Contains duplicates!")
         print(data.duplicated().sum())
@@ -14,6 +18,8 @@ def summarize(input_file, output_file):
         'patience', 'patience-tol', 'epochs',
         'lr', 'reduce-lr'
     ]
+    if "K" in data.columns:
+        groupby_cols.append("K")
     if "trials" in data.columns:
         groupby_cols.append("trials")
     data = data.groupby(groupby_cols).agg(
@@ -30,7 +36,10 @@ def summarize(input_file, output_file):
     data["epsilon_std"] = data["regret_std"]  # / data["initial-regret"]
     data = data.sort_values(
         by=['noise', 'd', 'M', 'N', 'hidden-layers'], ascending=True)
-    data.to_csv(output_file, index=False)
+    if os.path.splitext(output_file)[1] in [".csv", ".tsv"]:
+        data.to_csv(output_file, index=False)
+    else:
+        data.to_excel(output_file, index=False)
 
 
 def main():

@@ -82,10 +82,15 @@ def train_file(args):
     config = pd.read_csv(
         args.file, sep="\t",
     )
+    isSparse = 'K' in config.columns
     for _, row in config.iterrows():
         for _ in range(row["count"]):
-            (thetan, an, bn) = generate.generate_single_layer(
-                row["M"], row["d"], 1)
+            if isSparse:
+                (thetan, an, bn) = generate.generate_single_sparse_layer(
+                    row["K"], row["M"], row["d"], 1)
+            else:
+                (thetan, an, bn) = generate.generate_single_layer(
+                    row["M"], row["d"], 1)
             (X, Y_noiseless) = generate.generate_single_data(
                 row["N"], an, bn, thetan, row["act"])
             Y = generate.add_noise(Y_noiseless, row["noise"])
@@ -102,7 +107,8 @@ def train_file(args):
                 f"\t{row['act']}\t{row['dropout']}\t{row['hidden-layers']}"
                 f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"
                 f"\t{row['patience']}\t{row['patience-tol']}\t{row['epochs']}"
-                f"\t{row['reduce-lr']}",
+                f"\t{row['reduce-lr']}"
+                + (f"\t{row['K']}" if isSparse else ""),
             )
             hyperParamOpt = smart_train.hyper_param_search(
                 X[0], Y[0],
@@ -133,7 +139,8 @@ def train_file(args):
                 f"\t{row['weight-decay']}\t{row['lr']}\t{row['batch-size']}"
                 f"\t{row['patience']}\t{row['patience-tol']}\t{row['epochs']}"
                 f"\t{hyperParamOpt.epoch_number}\t{hyperParamOpt.num_queries}"
-                f"\t{row['reduce-lr']}",
+                f"\t{row['reduce-lr']}"
+                + (f"\t{row['K']}" if isSparse else ""),
                 flush=True)
             end_time = time.time()
             logging.info(f"Finish: {end_time - start_time}")
