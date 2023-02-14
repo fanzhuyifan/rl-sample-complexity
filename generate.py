@@ -33,7 +33,7 @@ def generate_single_sparse_layer(
     an /= np.linalg.norm(an, axis=-1, ord=2, keepdims=True)
     bn = np.zeros((num, M))
     alpha = np.ones(M) * K / M
-    thetan = np.random.dirichlet(alpha, num)
+    thetan = np.random.dirichlet(alpha, num) * np.sqrt(K)
     return (thetan, an, bn)
 
 
