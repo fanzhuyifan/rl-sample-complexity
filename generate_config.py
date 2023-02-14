@@ -71,73 +71,86 @@ def generate_fixed_N(args):
 
 
 def get_N_e_max(data, epsilon):
-    return data.where(data['epsilon'] < epsilon).groupby(['d', 'M', 'noise']).agg(
+    if 'K' in data.columns:
+        col = 'K'
+    else:
+        col = 'M'
+    cols = ['noise', 'd', col]
+    return data.where(data['epsilon'] < epsilon).groupby(cols).agg(
         N_e_max=pd.NamedAgg(column="N", aggfunc="min"),
     ).reset_index()
 
 
 def get_N_e_min(data, epsilon):
-    return data.where(data['epsilon'] >= epsilon).groupby(['d', 'M', 'noise']).agg(
+    if 'K' in data.columns:
+        col = 'K'
+    else:
+        col = 'M'
+    cols = ['noise', 'd', col]
+    return data.where(data['epsilon'] >= epsilon).groupby(cols).agg(
         N_e_min=pd.NamedAgg(column="N", aggfunc="max"),
     ).reset_index()
 
 
 def get_next_tests(data, epsilon, candidates):
+    if 'K' in candidates.columns:
+        col = 'K'
+    else:
+        col = 'M'
+    cols = ['noise', 'd', col]
     data_min_max = get_N_e_max(data, epsilon).merge(
         get_N_e_min(data, epsilon),
-        on=['d', 'M', 'noise'],
+        on=cols,
         how='outer',
     )
 
-    temp1 = data_min_max[['d', 'M', 'noise', 'N_e_max']].dropna()
+    temp1 = data_min_max[cols + ['N_e_max']].dropna()
     temp1['N'] = (temp1['N_e_max'] / 2).astype('int')
     temp1 = temp1.drop(['N_e_max'], axis=1)
 
-    temp2 = data_min_max[['d', 'M', 'noise', 'N_e_min']].dropna()
+    temp2 = data_min_max[cols + ['N_e_min']].dropna()
     temp2['N'] = (temp2['N_e_min'] * 2).astype('int')
     temp2 = temp2.drop(['N_e_min'], axis=1)
 
-    temp3 = data_min_max.dropna()[['d', 'M', 'noise', 'N_e_max']]
+    temp3 = data_min_max.dropna()[cols + ['N_e_max']]
     temp3['N'] = (temp3['N_e_max']).astype('int')
     temp3 = temp3.drop(['N_e_max'], axis=1)
     temp3['d'] *= 2
 
-    temp4 = data_min_max.dropna()[['d', 'M', 'noise', 'N_e_max']]
+    temp4 = data_min_max.dropna()[cols + ['N_e_max']]
     temp4['N'] = (temp4['N_e_max']).astype('int')
     temp4 = temp4.drop(['N_e_max'], axis=1)
-    temp4['M'] *= 2
+    temp4[col] *= 2
 
-    explore = pd.concat([temp3, temp4]).groupby(['d', 'M', 'noise']).agg(
+    explore = pd.concat([temp3, temp4]).groupby(cols).agg(
         N=pd.NamedAgg(column="N", aggfunc="max"),
     ).reset_index()
     candidates_with_data = data_min_max[
         (~data_min_max['N_e_max'].isna())
         |
         (~data_min_max['N_e_min'].isna())
-    ][['M', 'd', 'noise']]
+    ][cols]
     candidates_without_data = pd.concat([
         candidates_with_data, candidates_with_data, candidates
     ]).drop_duplicates(keep=False)
     explore = candidates_without_data.merge(
         explore,
-        left_on=['M', 'd', 'noise'],
-        right_on=['M', 'd', 'noise'],
+        left_on=cols,
+        right_on=cols,
         how='inner',
     )
 
     result = pd.concat([temp1, temp2, explore]).drop_duplicates()
 
-    temp = data[['d', "M", 'noise', 'N']].drop_duplicates()
+    temp = data[cols + ['N']].drop_duplicates()
     result = pd.concat([temp, temp, result]).drop_duplicates(
         keep=False
-    ).sort_values([
-        'noise', 'd', 'M', 'N'
-    ])
+    ).sort_values(cols + ['N'])
 
     result = candidates.merge(
         result,
-        left_on=['d', 'M', 'noise'],
-        right_on=['d', 'M', 'noise'],
+        left_on=cols,
+        right_on=cols,
         how='left',
     ).dropna().drop_duplicates()
     return result
