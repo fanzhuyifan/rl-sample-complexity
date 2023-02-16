@@ -39,7 +39,6 @@ class HyperParamOpt:
             **self.fixed_params,
         )
         self.num_queries += num_queries
-        best_vloss = best_vloss.detach().numpy()
         end_time = time.time()
         logging.info(
             f"hidden_dim {hidden_dim} "

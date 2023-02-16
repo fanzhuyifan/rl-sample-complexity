@@ -213,7 +213,7 @@ def train_early_stopping(
             vloss = loss_fn(voutputs, vlabels)
             running_vloss += vloss
 
-        avg_vloss = running_vloss / (i + 1)
+        avg_vloss = running_vloss.detach().numpy() / (i + 1)
 
         if reduceLROnPlateau is not None:
             reduceLROnPlateau.step(avg_vloss)
